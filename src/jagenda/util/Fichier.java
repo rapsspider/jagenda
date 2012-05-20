@@ -3,800 +3,636 @@
  * Package :    jagenda.util
  * Projet jAgenda - Info 1 2011-2012
  *
+ * $Revision$
+ * $Date$
+ * $HeadURL$
  */
 package jagenda.util;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.regex.Pattern;
+import java.io.File;
 
 /**
- * Classe {@code Fichier} contient les méthodes utiles à la gestion de fichiers 
- * texte (.txt).<br>
- * Les interactions sont rendues possibles par l'intermédiaire d'un flux 
- * d'entrées et flux de sorties du contenu du fichier.<br><br>
- * <i>Exemple d'utilisation : </i><br>
- * <pre>
- *     try {
- *         Fichier monfichier = new Fichier("repertoire", "monfichier.txt");
- *         monfichier.initEcriture(true);
- *         monfichier.ecriture("Nouvelle ligne");
- *         monfichier.fermeEcriture();
- *         <br>
- *         String[] contenu = new String[0];
- *         String ligne;
- *         <br>
- *         monficher.initLecture();
- *         while((ligne = monficher.lireLigne()) != null) {
- *             contenu = Arrays.copyOf(contenu, contenu.length+1);
- *             contenu[contenu.length-1] = ligne;
- *         }
- *         monfichier.fermeLecture();
- *     } catch (IOException ioEx) {
- *         System.out.println(ioEx.getMessage());
- *     }
- * </pre>
+ * Classe <code>Fichier</code> contient les méthodes utiles à la
+ * gestion de fichiers texte (.txt) :
+ * <ul><li>Lecture</li>
+ *     <li>Ecriture</li></ul>
+ * Les interactions sont rendues possibles par l'intermédiaire d'un
+ * flux d'entrée et flux de sortie du contenu du fichier.
  * 
- * @author  Jason BOURLARD
- * @author  David PELISSIER
- * @version 0.3
+ * @author Jason BOURLARD
+ * @author David PELISSIER
  */
 public class Fichier {
 
-    /**
-     * Expressions interdites pour un nom de fichier et/ou de
-     * dossier.
-     * <ul>
-     *     <li>Pattern :  (.*),</li>
-     *     <li>Pattern : \\.(.*),</li>
-     *     <li>Pattern : con(\\..*),</li>
-     *     <li>Pattern : nul(\\..*),</li>
-     *     <li>Pattern : aux(\\..*),</li>                          
-     *     <li>Pattern : lpt1(\\..*),</li>
-     * </ul>
+    /** 
+     * Flux de sortie : Ecriture 
      */
-    private static final Pattern expressionsInterdites = 
-        Pattern.compile("(\\..*|(con|nul|aux|lpt1)(\\..*)*)");
-
-    /**
-     * Caractères interdits à utiliser dans les noms de fichiers.
-     */
-    private static final char[] caracteresInterdits = 
-        { '\"', '/', '\\', '*', '?', '<', '>',  '|', ':' };
+    protected BufferedWriter ecriture;
     
     /** 
-     * Chemin d'accès au fichier.<br>
-     * (/) (\\..*|(con|nul|aux|lpt1)(\\..*)*)/)*
-     * (\\..*|(con|nul|aux|lpt1)(\\..*)*)
+     * Flux d'entrée : Lecture
      */
-    private final String CHEMIN;
-
+    protected BufferedReader lecture;
+    
     /** 
-     * Nom du fichier à lire ou à éditer.<br>
-     * (\\..*|(con|nul|aux|lpt1)(\\..*)*)
-     * 
-     * @see #expressionsInterdites
+     * Nom du fichier à lire ou à modifier 
      */
-    private final String NOM;
-
+    protected String nom;
     
-    /** Flux de sorties : Ecriture. */
-    private BufferedWriter ecriture = null;
-
-    /** Flux d'entrées : Lecture. */
-    private BufferedReader lecture = null;
+    /** 
+     * Chemin d'accès au fichier
+     * [/] ((a-z)(a-z)*(/))* (a-z)(a-z)*
+     */
+    protected String chemin;
     
     /**
-     * Création d'un nouvel objet représentant un {@code Fichier}.<br>
-     * Un {@code Fichier} porte un {@code nomFichier} et possède un 
-     * {@code chemin}.<br>
-     * Un fichier peut être lu et modifié.<br>
-     * Pour cela on utilise deux flux, un {@code flux d'entrées} dit 
-     * {@code lecture} pour lire, et un {@code flux de sorties} dit 
-     * {@code ecriture} pour écrire. Ces flux ne sont pas initialisés lors
-     * de l'appel du constructeur. <br>
-     * Pour les initialiser, il faut faire appel aux méthodes 
-     * {@code initLecture()} et {@code initEcriture()}.
-     * 
-     * @param  chemin       Dossier ou chemin menant au {@code Fichier}.
-     * @param  nomFichier   {@code Fichier} à ouvrir.
-     * @throws IOException  est généré si le chemin du {@code Fichier} est 
-     *                      incorrect.
-     * @see   #estCheminValide(String)
-     * @see   #estNomValide(String)
-     * @see   #expressionsInterdites
-     * @see   #caracteresInterdits
+     * Créé un dossier.<br>
+     * Le dossier est créé au même endroit que l'exécutable
+     * java qui contient le main().<br>
+     * Le dossier n'est pas crée s'il comporte un nom nul.
+     * @param dossier Dossier à créer
      */
-    public Fichier(String chemin, String nomFichier) throws IOException {
-
-        // Si le chemin est nul ou vide, on instance la valeur de chemin à 
-        // "vide" et on verifie simplement la validité du nom.
-        if(!estNomValide(nomFichier)) {
-            throw new IOException(nomFichier + " n'est pas un nom de fichier"
-                    + " correct.");
-        } else if (!estCheminValide(chemin)) {
-            throw new IOException(chemin + " est un chemin incorrect.");
+    public static void creationDossier(String dossier) {
+        if(dossier.length() > 0 && dossier.charAt(dossier.length()-1) != '/') {
+            new File(dossier).mkdirs();
         }
-
-        this.NOM = nomFichier;
-        this.CHEMIN = chemin != "" && chemin != null ? chemin : "";
     }
-
     
     /**
-     * Création d'un nouvel objet représentant un {@code Fichier}.<br>
-     * Un {@code Fichier} porte un {@code nomFichier} et possède un 
-     * {@code chemin}.<br>
-     * Un fichier peut être lu et modifié.<br>
-     * Pour cela on utilise deux flux, un {@code flux d'entrées} dit 
-     * {@code lecture} pour lire, et un {@code flux de sorties} dit 
-     * {@code ecriture} pour écrire. Ces flux ne sont pas initialisés lors
-     * de l'appel du constructeur. <br>
-     * Pour les initialiser, il faut faire appel aux méthodes 
-     * {@code initLecture()} et {@code initEcriture()}.
-     * 
-     * @param  nomFichier   {@code Fichier} à ouvrir.
-     * @throws IOException  est généré si le chemin du {@code Fichier} est 
-     *                      incorrect.
-     * @see   #estCheminValide(String)
-     * @see   #estNomValide(String)
-     * @see   #expressionsInterdites
-     * @see   #caracteresInterdits
+     * Initialise le flux de lecture.<br>
+     * C'est le flux d'entrée pour permettant la lecture d'un fichier.
+     * @throws IOException est généré si le chemin du fichier est anormal
      */
-    public Fichier(String nomFichier) throws IOException {
-
-         // Si le nom du fichier est correct, on peut continuer...
-        if(!estNomValide(nomFichier)) {
-            throw new IOException(nomFichier + " n'est pas un nom de fichier"
-                    + "correct");
-        }
-        this.CHEMIN = "";
-        this.NOM = nomFichier;
+    private void initReader() throws IOException {
+    	if (this.chemin == "/") {
+    		this.lecture = new BufferedReader(new FileReader(this.chemin + this.nom));
+    	} else if (this.chemin != "") {
+            this.lecture = new BufferedReader(new FileReader(this.chemin + '/' + this.nom));
+    	} else {
+    		this.lecture = new BufferedReader(new FileReader(this.nom));
+    	}
     }
-
     
     /**
-     * Initialise le {@code flux de sorties} dit {@code Ecriture}.<br>
-     * C'est le flux de sorties permettant d'écrire dans le {@code Fichier}.
-     * Les données envoyées sur ce flux seront immédiatement inscrites à la fin 
-     * du {@code Fichier}.
-     * 
-     * @throws  IOException          est généré si le {@code chemin} du 
-     *                               {@code Fichier} est anormal ou bien si les 
-     *                               droits d'écriture sont insuffisants.
-     *                               Il faut peut-être faire appel à 
-     *                               {@code creationDossier()} afin  de créer
-     *                               les différents dossiers qui forment le 
-     *                               {@code chemin}.
-     * @throws FileNotFountException est généré si le {@code chemin} menant au 
-     *                               {@code Fichier} est incorrect ou n'existe 
-     *                               pas.
-     * @see    #creationDossiers(String)
+     * Initialise le flux d'écriture.<br>
+     * C'est le flux de sortie permettant d'écrire dans le fichier.
+     * @param sansEcraser Contient TRUE si on écris à la fin du fichier
+     * @throws IOException est généré si le chemin du fichier est anormal
      */
-    public void initEcriture() throws IOException {
-        initEcriture(true);
+    private void initWriter(boolean sansEcraser) throws IOException {
+    	if (this.chemin == "/") {
+    		this.ecriture = new BufferedWriter(new FileWriter(this.chemin  +  this.nom, sansEcraser));
+    	} else if (this.chemin != "") {
+    		this.ecriture = new BufferedWriter(new FileWriter(this.chemin  + '/' +  this.nom, sansEcraser));
+   	    } else {
+   	    	this.ecriture = new BufferedWriter(new FileWriter(this.nom, sansEcraser));
+        }
     }
-
     
     /**
-     * Initialise le {@code flux de sorties} dit {@code Ecriture}.<br>
-     * C'est le flux de sorties permettant d'écrire dans le {@code Fichier}.<br>
-     * Si {@code sansEcrase} vaut {@code true}, les données envoyées sur ce flux
-     * seront immédiatement inscrites à la fin du {@code Fichier}.<br> 
-     * Dans le cas contraire, le {@code Fichier} est réinitialisé, et les
-     * données sont inscrites au début du {@code Fichier}.
-     * 
-     * @param  sansEcraser           {@code true} si on désire écrire en fin de
-     *                               {@code Fichier}
-     * @throws IOException           est généré si le {@code chemin} du 
-     *                               {@code Fichier} est anormal ou bien si les 
-     *                               droits d'écriture sont insufisants.<br>
-     *                               Il faut peut-être faire appel à 
-     *                               {@code creationDossier()} afin  de créer
-     *                               les différents dossiers qui forment le 
-     *                               {@code chemin}.
-     * @throws FileNotFountException est généré si le {@code chemin} menant au 
-     *                               {@code Fichier} est incorrect ou n'existe 
-     *                               pas.
-     * @see    #creationDossiers(String)
-     */
-    public void initEcriture(boolean sansEcraser) throws IOException {
-        if (this.CHEMIN.equals("/")) {
-            this.ecriture = new BufferedWriter(
-                    new FileWriter(this.CHEMIN + this.NOM, sansEcraser));
-        } else if (!this.CHEMIN.equals("")) {
-            this.ecriture = new BufferedWriter(
-                    new FileWriter(this.CHEMIN + '/' + this.NOM, sansEcraser));
-        } else {
-            this.ecriture = new BufferedWriter(
-                    new FileWriter(this.NOM, sansEcraser));
-        }
-    }
-
-    
-    /**
-     * Initialise le {@code flux d'entrées} dit {@code Lecture}.<br>
-     * C'est le flux d'entrées permettant la lecture d'un {@code Fichier}.
-     * 
-     * @throws FileNotFoundException est généré si le {@code chemin} du
-     *         {@code Fichier} est anormal.
-     */
-    public void initLecture() throws FileNotFoundException {
-        if (this.CHEMIN.equals("/")) {
-            this.lecture = new BufferedReader(new FileReader(this.CHEMIN 
-                    + this.NOM));
-        } else if (!this.CHEMIN.equals("")) {
-            this.lecture = new BufferedReader(new FileReader(this.CHEMIN + '/' 
-                                                           + this.NOM));
-        } else {
-            this.lecture = new BufferedReader(new FileReader(this.NOM));
-        }
-    }
-
-    
-    /**
-     *  Accesseur pour le champ {@code CHEMIN}
-     *  
-     *  @return Chemin d'accès au {@code Fichier}.
-     */
-    public String getChemin() {
-        return CHEMIN;
-    }
-
-    
-    /**
-     *  Accesseur pour le champ {@code NOM}.
-     *  
-     *  @return Nom du {@code Fichier}.
-     */
-    public String getNom() {
-        return NOM;
-    }
-
-    
-    /**
-     * Vérifie si la {@code chaine} ne comporte pas de caractères interdits, 
-     * n'est pas nulle et comporte au moins 1 caractère.<br>
-     * Les caractères interdits sont : ", /, \, *, ?, <, >, | et : <br>
-     * De plus, la {@code chaine} de caractères doit être différente des 
-     * expressions suivantes :
-     * <ul>
-     *     <li>Pattern :  (.*),</li>
-     *     <li>Pattern : \\.(.*),</li>
-     *     <li>Pattern : con(\\..*),</li>
-     *     <li>Pattern : nul(\\..*),</li>
-     *     <li>Pattern : aux(\\..*),</li>                          
-     *     <li>Pattern : lpt1(\\..*),</li>
-     * </ul>
-     * 
-     * @param  chaine   {@code Chaine} à tester.
-     * @return {@code TRUE} si la {@code chaine} est correcte.
-     * @see    #expressionsInterdites
-     * @see    #caracteresInterdits
-     * 
-     */
-    public static boolean estValide(String chaine) {
-        boolean chaineCorrecte;
-        if(chaine != null && chaine.length() > 0) {
-            chaineCorrecte = true;
-            /*
-             * On verifie que la chaine ne commence pas par
-             * con(.[a-z]), nul(.[a-z]), aux(.[a-z]) ou lpt1(.[a-z]).
-             *
-             * On regarde que la structure du mot expression soit différente de
-             * la chaine mis en paramètre.
-             * Si le mot ressemble à une expression interdite, alors on signale 
-             * que la chaine est incorrecte.
-             */
-            chaineCorrecte = !expressionsInterdites.matcher(chaine).matches();
-            
-            /*
-             * On vérifie que tous les caractères de la chaine sont différents
-             * des caractères interdits. 
-             */
-            for(int c = 0; c < chaine.length() && chaineCorrecte; c++) {
-                for(int i = 0; i < caracteresInterdits.length; i++) {
-                    if (caracteresInterdits[i] == chaine.charAt(c)) {
-                        chaineCorrecte = false;
-                    }
-                }
-            }
-        } else {
-            chaineCorrecte = false;
-        }
-        return chaineCorrecte;
-    }
-
-
-    /**
-     * Méthode permettant de tester si le {@code chemin} est possible.<br>
-     * Si le chemin comporte un '/' en premier caractère, cela indique que le 
-     * {@code chemin} débute à la racine.<br>
-     * Un chemin ne fini pas par un '/' sauf s'il ne contient qu'un seul 
-     * caractère.<br>
-     * <i>Exemples<br>
-     * <ul>
-     *     <li>/chemin/ est <b>impossible</b></li>
-     *     <li>/ est <b>possible</b></li>
-     *     <li>null est <b>possible</b></li>
-     *     <li>chemin est <b>possible</b></li>
-     *     <li>chemin//dir/ est <b>impossible</b></li>
-     *     <li>/chemin est <b>possible</b></li>
-     * </ul>
-     * </i>
-     * 
-     * @param  chemin    Nom du {@code chemin} à analyser.
-     * @return {@code true} si le {@code chemin} est valide.
-     * @see    #estValide(String)
-     */
-    public static boolean estCheminValide(String chemin) {
-        boolean estCorrect = true;
-
-        if (chemin != null && !chemin.equals("/") && chemin != "") {
-            // On découpe le chemin en dossiers
-            String[] dossier = chemin.split("/");
-            // On s'assure que tous les noms de dossiers soient corrects.
-            for(int i = 1; i < dossier.length && estCorrect;i++) {
-                estCorrect = estValide(dossier[i]);
-            }
-            // Vérification du dernier caractère de la chaine, différent de '/'.
-            estCorrect = estCorrect && chemin.charAt(chemin.length()-1) != '/';
-        }
-        return estCorrect;
-    }
-
-    
-    /**
-     * Méthode permettant de tester la valeur du {@code nom} de {@code Fichier}.
-     * S'il est valide, sa valeur est mise à jour.<br>
-     * Un {@code nom} de {@code Fichier} comporte au moins 1 caractère. Il peut
-     * ou non être suivis d'une extention.<br>
-     * <i>Exemple : nomdufichier.extension</i><br>
-     * Cependant certains caractères sont interdits.
-     * 
-     * @param   fichier {@code Nom} du {@code Fichier} à analyser.
-     * @return  {@code true} si le {@code nom} est correct.
-     * @see     #estValide(String)
-     * @see     #expressionsInterdites
-     * @see     #caracteresInterdits
-     * 
-     */
-    public static boolean estNomValide(String fichier) {
-        return estValide(fichier);
-    }
-
-    /**
-     * Crée un ou plusieurs {@code dossiers}.<br>
-     * Le (premier) {@code dossiers} est créé dans le même repertoire que 
-     * l'exécutable Java.<br>
-     * Le dossier n'est pas créé s'il comporte un nom nul. Plusieurs 
-     * {@code dossiers} sont créés si l'argument {@code dossier} comporte des 
-     * <b>/</b> permettant de définir un chemin.<br>
-     * Un nom de {@code dossier} doit être différent de 
-     * {@code expressionsInterdites}.
-     * 
-     * @param dossiers Nom du(des) dossier(s) à créer.
-     * @see   #estValide(String)
-     * @see   #expressionsInterdites
-     * @see   #caracteresInterdits
-     */
-    public static void creationDossiers(String dossiers) {
-        String[] dossier = dossiers.split("/");
-        int i;
-
-        for(i=0; i < dossier.length && estValide(dossier[i]); i++);
-        if (i==dossier.length && dossiers != null && dossiers.length() > 0 
-                && dossiers.charAt(dossiers.length()-1) != '/') {
-            new File(dossiers).mkdirs();
-        }
-    }
-
-    /**
-     * Méthode permettant la suppression définitive du {@code Fichier}.<br>
-     * On ferme le {@code flux d'entrées} dit {@code Lecture}, et le 
-     * {@code flux de sorties} dit {@code Ecriture}, avant de supprimer le 
-     * {@code Fichier}.<br>
-     * Si un flux est encore en actif, le {@code Fichier} ne pourra pas être 
-     * supprimé.
-     */
-    public void supprimeFichier() {
-        fermeLecture();
-        fermeEcriture();
-    
-        File fichierASupprimer;
-        if (this.CHEMIN.equals("/")) {
-            fichierASupprimer = new File(this.CHEMIN + this.NOM);
-        } else if (this.CHEMIN != "") {
-            fichierASupprimer = new File(this.CHEMIN + '/' + this.NOM);
-        } else {
-            fichierASupprimer = new File(this.NOM);
-        }
-    
-        if(!fichierASupprimer.delete()) {
-            System.err.println("Le fichier n'a pas pu être supprimé. " +
-                    "Peut-être est t-il en cours d'utilisation ?"); 
-        }
-    }
-
-
-    /**
-     * Fermeture du {@code flux d'entrées} dit {@code Lecture} permettant la 
-     * lecture du {@code Fichier}.
-     */
-    public void fermeLecture() {
-        if(this.lecture != null) {
-            try {
-                this.lecture.close();
-            } catch (IOException ioEx) {
-                System.err.println("Erreur dans la fermeture du flux de "
-                        + "lecture.");
-            }
-        }
-    }
-
-    /**
-     * Fermeture du {@code flux de sorties} dit {@code Ecriture} permettant 
-     * d'écrire dans le {@code Fichier}.
-     */
-    public void fermeEcriture() {
-        if(this.ecriture != null) {
-            try {
-                this.ecriture.close();
-            } catch (IOException ioEx) {
-                System.err.println("Erreur dans la fermeture du flux "
-                        + "d'écriture.");
-            }
-        }
-    }
-
-    /**
-     * Ajout d'un {@code message} dans le {@code Fichier} puis ajout d'une
-     * nouvelle ligne.<br>
-     * Cette méthode fait appel au {@code flux de sorties} dit {@code Ecriture}.
-     * <br><b>WARNING</b> Tout caractère '\r' ou '\n' risque de créer un retour 
-     * à la ligne.
-     * 
-     * @param message  Message à écrire dans le {@code Fichier}
-     * @see   #ecriture
-     */
-    public void ecrire(String message) {
-        if(this.ecriture != null) {
-
-            if(message != null) {
-                try {
-                    this.ecriture.write(message);
-                    this.ecriture.newLine();
-                    this.ecriture.flush();
-                } 
-                catch(IOException ioEx) {
-                }
-            }
-        } else {
-            System.err.println("Le flux d'écriture n'a pas été initialisé.");
-        }
-    }
-
-    /**
-     * Ajout d'un {@code message} dans le fichier à la ligne {@code indice}.<br>
-     * Cette méthode fait appel au {@code flux de sorties} dit {@code Ecriture}.
-     * et à un {@code flux d'entrées} dit {@code Lecture}.<br><br>
-     * Chaque ligne du {@code Fichier} est mis en mémoire, puis écrite une
-     * à une dans le nouveau {@code Fichier} jusqu'à atteindre l'{@code indice}.
-     * <br>
-     * Si l'{@code indice} n'est pas atteint et que toutes les lignes ont été
-     * réécrites. On place le {@code message} à la fin du {@code Fichier}.
-     * La première ligne a pour indice 0.<br>
-     * <br><b>WARNING</b> Tout caractère '\r' ou '\n' risque de créer un retour 
-     * à la ligne.
-     * 
-     * @param message Message à écrire dans le {@code Fichier}.
-     * @param indice  {@code Indice} de la ligne où écrire le {@code message}.
-     * @see   #ecrire(String)
-     * @see   #lireLigne()
-     * @see   #lecture
-     * @see   #ecriture
-     */
-    public void ecrire(String message, int indice) {
-        if(this.ecriture != null && this.lecture != null) {
-            // On garde en mémoire le contenu du fichier avant d'exécuter la 
-            // suppression de la ligne.
-            String[] contenuAvant = new String[0];
-            String ligne;
-
-            for(int i = 0; (ligne = lireLigne()) != null; i++) {
-                contenuAvant=Arrays.copyOf(contenuAvant, contenuAvant.length+1);
-                contenuAvant[i] = ligne;
-            }
-
-            try {
-                // On remet à zéro le fichier avant de commencer l'écriture.
-                initEcriture(false);
-
-                /*
-                 * On remet toutes les lignes en mémoire dans le fichier et 
-                 * lorsque l'index vaut l'indice de la ligne correspondant au 
-                 * messageà écrire, on écrit le message.
-                 */
-                for(int i = 0; i < contenuAvant.length; i++) {
-                    if(indice == i) {
-                        ecrire(message);
-                    }
-                    ecrire(contenuAvant[i]);
-                }
-            } catch (IOException ioEx) {
-            }
-        } else {
-            System.err.println("Le flux d'écriture n'a pas été initialisé.");
-        }
-    }
-
-    /**
-     * Retourne la ligne courante dans le tampon du {@code Fichier}.<br>
-     * Chaque appel à la fonction {@code readLine()} une nouvelle ligne est lu.
-     * La fin du ligne se fait lors de la rencontre de '\n' ou '\r'.<br>
-     * On retourne {@code null} si toutes les lignes du {@code Fichier} ont été 
-     * lues. Pour réinitialiser la lecture, il faut faire appel à la méthode 
-     * {@code initLecture()}.<br>
-     * <i>Exemple d'utilisation :</i><br>
-     * <pre>
-     *     try {
-     *         Fichier fichier = new Fichier("nomdufichier");
-     *         String[] contenu = new String[0];
-     *         String ligne;
-     *     
-     *         fichier.initLecture();
-     *         while((ligne = lireLigne()) != null) {
-     *             contenuAvant = Arrays.copyOf(contenuAvant,
-     *                                          contenuAvant.length+1);
-     *             contenuAvant[contenuAvant.length-1] = ligne;
-     *          }
-     *          fichier.fermeLecture();
-     *      } catch (FileNotFoundException e) {
-     *      }
-     * </pre>
-     * @return Ligne courante dans le tampon du {@code Fichier}.
-     * @see #lecture
-     */
-    public String lireLigne() {
-        // Contient le contenu de la ligne i
-        String contenu = null;
-        if(this.lecture != null) {
-            try {
-                // On prend la prochaine ligne du fichier
-                contenu = this.lecture.readLine();
-            } catch (IOException ioEx) {
-                contenu = null;
-            }
-        } else {
-            System.err.println("Le flux de lecture n'a pas été initialisé.");
-        }
-        return contenu;
-    }
-
-    /**
-     * Remplacement de la ligne {@code indice} du {@code Fichier}.<br>
-     * Cette méthode fait appel au {@code flux de sorties} dit {@code Ecriture}.
-     * et à un {@code flux d'entrées} dit {@code Lecture}.<br><br>
-     * Chaque ligne du {@code Fichier} est mis en mémoire, puis écrite une
-     * à une dans le nouveau {@code Fichier} jusqu'à atteindre l'{@code indice}.
-     * <br>
-     * Si l'{@code indice} n'est pas atteint et que toutes les lignes ont été
-     * réécrites. On place le {@code message} à la fin du {@code Fichier}.
-     * La première ligne a pour indice 0.<br>
-     * <br><b>WARNING</b> Tout caractère '\r' ou '\n' risque de créer un retour 
-     * à la ligne.
-     * 
-     * @param message Message à écrire à l'indice {@code indice}.
-     * @param indice  Indice de la ligne à remplacer.
-     * @see   #ecrire(String)
-     * @see   #lireLigne()
-     * @see   #lecture
-     * @see   #ecriture
-     */
-    public void remplacerLigne(String message, int indice) {
-        if(this.ecriture != null && this.lecture != null) {
-            // On garde en mémoire le contenu du fichier avant d'exécuter la 
-            // suppression de la ligne.
-            String[] contenuAvant = new String[0];
-            String ligne;
-
-            for(int i = 0; (ligne = lireLigne()) != null; i++) {
-                contenuAvant=Arrays.copyOf(contenuAvant, contenuAvant.length+1);
-                contenuAvant[i] = ligne;
-            }
-
-            try {
-                // On remet à zéro le fichier avant de commencer l'écriture.
-                initEcriture(false);
-
-                /*
-                 * On remet toutes les lignes en mémoire dans le fichier et 
-                 * lorsque l'index vaut l'indice de la ligne correspondant au 
-                 * messageà écrire, on écrit le message.
-                 */
-                for(int i = 0; i < contenuAvant.length; i++) {
-                    if(indice == i) {
-                        ecrire(message);
-                    } else {
-                        ecrire(contenuAvant[i]);
-                    }
-
-                }
-            } catch (IOException ioEx) {
-            }
-        } else {
-            System.err.println("Le flux d'écriture n'a pas été initialisé.");
-        }
-    }
-
-    
-    /**
-     * Supprime une ligne du {@code Fichier}.<br>
-     * La première ligne du {@code Fichier} a pour indice 0.<br>
-     * Cette méthode fait appel au {@code flux de sorties} dit {@code Ecriture}.
-     * et à un {@code flux d'entrées} dit {@code Lecture}.<br><br>
-     * On stocke dans la mémoire toutes les lignes contenues dans le 
-     * {@code Fichier} sosu forme de tableau. Ensuite, on réinitialise le 
-     * {@code Fichier} à zéro et on réinsère toutes les lignes une par une.<br>
-     * Si on atteint la ligne {@code indice}, on l'ignore et on insère les 
-     * lignes suivantes.<br>
-     * Si la ligne {@code indice} n'est pas atteinte avant la fin des lignes 
-     * contenues dans le {@code Fichier}, rien ne se passe.
-     * 
-     * @param indice  Indice de de la ligne a supprimer.
-     * @see   #ecrire(String)
-     * @see   #lireLigne()
-     * @see   #lecture
-     * @see   #ecriture
+     *  Supprime une ligne du fichier.<br>
+     *  La première ligne du fichier a pour indice 0.
+     *  @param indice Ligne a supprimer
      */
     public void supprimerLigne(int indice) {
-        if(this.ecriture != null && this.lecture != null) {
-            /*
-             * On garde en mémoire le contenu du fichier
-             * avant d'executer la suppression de la ligne
-             */
-            String[] contenuAvant = new String[0];
-            String ligne;
-    
-            for(int i = 0; (ligne = lireLigne()) != null; i++) {
-                contenuAvant = Arrays.copyOf(contenuAvant,
-                        contenuAvant.length+1);
-                contenuAvant[i] = ligne;
-            }
-    
-            try {
-                // On remet à zéro le fichier avant de commencer l'écriture.
-                initEcriture(false);
-
-                /*
-                 * On remet toutes les lignes en mémoire dans le fichier et 
-                 * lorsque l'index vaut l'indice de la ligne correspondant au 
-                 * message à écrire, on omet la ligne pour la supprimer.
-                 */
-                for(int i = 0; i < contenuAvant.length; i++) {
-                    if(i != indice) {
-                        ecrire(contenuAvant[i]);
-                    }
-                }
-            } catch (IOException ioEx) {
-            }
-        } else {
-            System.err.println("Le flux d'écriture n'a pas été initialisé.");
-        }
-    }
-
-    
-    /**
-     * Retourne le nombre de lignes que contient le {@code Fichier}.<br>
-     * Une ligne se termine par "\n" ou "\r".<br>
-     * Cette methode fait appel au {@code flux d'entrées} dit {@code Lecture}.
-     * <br>Si une erreur survient, on renvoie -1.<br>
-     * Cette méthode gère toute seule la fermeture et l'ouverture du 
-     * {@code flux d'entrées} dit {@code Lecture}.
-     * 
-     * @return Nombre de lignes.
-     * @see    #lecture
-     */
-    public int nbLigne() {
-        int nbLigne = 0;
+        /*
+         * On garde en mémoire le contenu du fichier
+         * avant d'executer la suppression de la ligne
+         */
+        String[] contenuAvant = lectureDesLignes();
+        
         try {
-            // On place l'ancien BufferedReader en mémoire
-            BufferedReader tampon = this.lecture;
-            
-            // On réinitialise le flux d'entrée
-            initLecture();
-
-            // On incrémente nbLigne tant que readLine() retourne un résultat
-            while (this.lecture.readLine() != null) {
-                nbLigne++;
+        	/*
+             * On remet à zero le fichier avant de commencer
+             * l'écriture
+             */
+        	initWriter(false);
+        
+            /*
+             * On remet toutes les lignes en mémoire dans
+             * le fichier sauf celle qui doit être
+             * supprimée
+             */
+            for(int i = 0; i < contenuAvant.length; i++) {
+                if(i != indice) {
+                    ecrire(contenuAvant[i]);
+                }
             }
-
-            // Toutes les lignes ont été lues. On peut fermer le flux d'entrées.
-            fermeLecture();
-
-            // On replace le BufferedReader mis en mémoire dans this.lecture
-            this.lecture = tampon;
-        } catch (IOException ioEx) {
-            nbLigne = -1;
+        } catch (IOException e) {
         }
-        return nbLigne;
     }
-
+    
     /**
-     * Formate le chemin du fichier sous forme de chaîne de caractères au format
-     *  String.<br>
-     * Polymorphisme de la méthode {@code toString} de la classe {@code Object}.
-     * <br>
-     * <i>Exemple : iut/java/nomdufichier.ext</i>
-     * 
-     * @return Chemin du fichier et nom du fichier.
+     * Création d'un nouvel objet représentant un <code>Fichier</code>.<br>
+     * Un <code>Fichier</code> porte un <code>nomDuFichier</code> et possède
+     * un <code>chemin</code>.<br>
+     * Un fichier peut être lu et modifié.<br>
+     * Pour cela on utilise deux flux, un flux d'entrée pour lire,<br>
+     * et un flux de sortie pour écrire.
+     * @param  chemin  Dossier ou chemin menant au fichier
+     * @param  nomDuFichier Fichier à ouvrir
+     * @throws IOException est généré si le chemin du fichier est anormal
+     */
+    public Fichier(String chemin, String nomDuFichier) throws IOException {
+    	/*
+    	 * Si le chemin et le nom du fichier sont correct
+    	 * On peut continuer
+    	 */
+        if(setChemin(chemin) && setNom(nomDuFichier)) {
+            try {
+                initWriter(true);
+            } catch (IOException e) {
+                creationDossier(this.chemin);
+                initWriter(true);
+            }
+            initReader();
+        } else {
+        	throw new IOException("Chemin ou nom de fichier anormal");
+        }
+    }
+    
+    /**
+     * Création d'un nouvel objet représentant un <code>Fichier</code>.<br>
+     * Un <code>Fichier</code> porte un <code>nomDuFichier</code> et possède
+     * un <code>chemin</code>.<br>
+     * Un fichier peut être lu et modifié.<br>
+     * Pour cela on utilise deux flux, un flux d'entrée pour lire,<br>
+     * et un flux de sortie pour écrire.
+     * @param  chemin       Dossier ou chemin menant au fichier
+     * @param  nomDuFichier Fichier à ouvrir
+     * @param  ecrase       Indique si le fichier doit être écrasé ou non.
+     * @throws IOException  est généré si le chemin du fichier est anormal
+     */
+    public Fichier(String chemin, String nomDuFichier, boolean ecrase) throws IOException {
+    	/*
+    	 * Si le chemin et le nom du fichier sont correct
+    	 * On peut continuer
+    	 */
+        if(setChemin(chemin) && setNom(nomDuFichier)) {
+            try {
+                initWriter(!ecrase);
+            } catch (IOException e) {
+                creationDossier(this.chemin);
+                initWriter(!ecrase);
+            }
+            initReader();
+        } else {
+        	throw new IOException("Chemin ou nom de fichier anormal");
+        }
+    }
+    
+    /**
+     * Création d'un nouvel objet représentant un <code>Fichier</code>.<br>
+     * Un <code>Fichier</code> porte un <code>nomDuFichier</code>
+     * et possède un <code>chemin</code> qui ici sera vide.<br>
+     * Un fichier peut être lu et modifié.<br>
+     * Pour cela on utilise deux flux, un flux d'entrée pour lire,<br>
+     * et un flux de sortie pour écrire.
+     * @param  nomDuFichier Fichier à ouvrir
+     * @throws IOException  est généré si le chemin du fichier est anormal
+     */
+    public Fichier(String nomDuFichier) throws IOException {
+    	this.chemin = "";
+    	
+    	/*
+    	 * Si le nom du fichier est correct
+    	 * On peut continuer
+    	 */
+        if(setNom(nomDuFichier)) {
+            try {
+                initWriter(true);
+            } catch (IOException e) {
+                initWriter(true);
+            }
+            initReader();
+        } else {
+        	throw new IOException("Chemin ou nom de fichier anormal");
+        }
+    }
+    
+    /**
+     * Création d'un nouvel objet représentant un <code>Fichier</code>.<br>
+     * Un <code>Fichier</code> porte un <code>nomDuFichier</code>
+     * et possède un <code>chemin</code> qui ici sera vide.<br>
+     * Un fichier peut être lu et modifié.<br>
+     * Pour cela on utilise deux flux, un flux d'entrée pour lire,<br>
+     * et un flux de sortie pour écrire.
+     * Le fichier est écrasé avant d'être utilisé.
+     * @param  nomDuFichier Fichier à ouvrir
+     * @param  ecrase       Indique si le fichier doit être écrasé ou non.
+     * @throws IOException  est généré si le chemin du fichier est anormal
+     */
+    public Fichier(String nomDuFichier, boolean ecrase) throws IOException {
+    	this.chemin = "";
+    	/*
+    	 * Si le nom du fichier est correct
+    	 * On peut continuer
+    	 */
+        if(setNom(nomDuFichier)) {
+            try {
+                initWriter(!ecrase);
+            } catch (IOException e) {
+                initWriter(!ecrase);
+            }
+            initReader();
+        } else {
+        	throw new IOException("Chemin ou nom de fichier anormal");
+        }
+    }
+    
+    /**
+     * Verifie si la chaine ne comporte pas de caractère interdit.<br>
+     * Ces caractères interdits sont : ", /, \, *, ?, <, >, | et : <br>
+     * La <code>chaine</chaine> doit être différente de con(.[a-z]), nul(.[a-z])
+     * aux(.[a-z]), lpt1(.[a-z]).
+     * @param chaine Contient la <code>chaine</code> à tester
+     * @return TRUE si la <code>chaine</code> est correct
+     */
+    public static boolean estCorrect(String chaine) {
+    	final char[] caractereInterdit = { '\"', '/', '\\', '*', '?', '<', '>', '|', ':' };
+    	final String[] nomInterdit = { "con", "nul", "aux", "ltp1" };
+    	boolean chaineCorrect = true;
+    	
+    	/*
+    	 * On verifie que la chaine ne commence pas par
+    	 * con(.[a-z]), nul(.[a-z]), aux(.[a-z]) ou lpt1(.[a-z])
+    	 */
+    	for(int c, i = 0; i < nomInterdit.length && chaineCorrect; i++) {
+    		
+    		/*
+    		 * On regarde si la taille de la chaine est supérieur
+    		 * à la taille du mot interdit
+    		 */
+    		if (chaine.length() > nomInterdit[i].length()) {
+    			/*
+    			 * On regarde caractère par caractère
+    			 */
+	    		for(c = 0; c < nomInterdit[i].length() 
+	    				&& nomInterdit[i].charAt(c) == chaine.charAt(c); c++);
+	    		
+	    		/*
+	    		 * Si le mot interdit est présent en début de chaine
+	    		 * On s'assure qu'il n'est pas suivis du caractère '.'
+	    		 */
+	    		if(c == nomInterdit[i].length() && nomInterdit[i].charAt(c-1) == chaine.charAt(c-1)) {
+	    			if(chaine.charAt(nomInterdit[i].length()) == '.') {
+	    				chaineCorrect = false;
+	    			}
+	    		}
+	    		
+	    	/*
+	    	 * On s'assure que la chaine est différent du mot interdit
+	    	 */
+    		} else if (chaine.compareTo(nomInterdit[i]) == 0) {
+    			chaineCorrect=false;
+    		}
+    	}
+    	
+    	/*
+    	 * On vérifie que tous les caractères de la chaine
+    	 * sont différents des caractères interdits
+    	 */
+    	for(int c = 0; c < chaine.length() && chaineCorrect; c++) {
+    		for(int i=0; i < caractereInterdit.length; i++) {
+    			if (caractereInterdit[i] == chaine.charAt(c)) {
+    				chaineCorrect = false;
+    			}
+    		}
+    	}
+    	
+    	return chaineCorrect;
+    }
+    	
+    /**
+     * Méthode permettant de tester si le <code>chemin</code> est possible.<br>
+     * Si le chemin comporte un / en premier caractère, cela indique
+     * que le chemin commence à la racine.
+     * Le chemin se représente comme ceci : "[/]( (a-z)(a-z)* / )*(a-z)" + ""<br>
+     * <lu><li>/chemin/ est possible et sera remplacé par /chemin</li>
+     *     <li>/ est possible</li>
+     *     <li>null est possible</li>
+     *     <li>chemin est possible</li>
+     *     <li>chemin//dir/ est impossible et sera remplacé par chemin/dir</li>
+     *     </ul>
+     * @param chemin Contient le nom du <code>chemin</code> a analyser
+     * @return TRUE si le <code>chemin</code> peut être utilisé
+     */
+    private boolean setChemin(String chemin) {
+        boolean estCorrect = true;
+        
+    	if (chemin == null) {
+    		chemin = "";
+    	} else if (chemin != "/") {
+    		
+    		String[] dossier=chemin.split("/");    	
+    		
+    	    /*
+    	     *  On enlève ici les / en trop
+    	     *  toute chaine vide entre un / et un autre
+    	     *  se voit supprimé.
+    	     *  Si la première chaine est vide,
+    	     *  cela indique que le chemin commencera
+    	     *  à la racine.
+    	     */
+    	    chemin = dossier[0];
+    	    if(dossier[0] != null && dossier[0] != "") {
+        		estCorrect = estCorrect(dossier[0]);
+        	}
+    	    
+    	    /*
+    	     * On supprimer les dossiers null ou vide
+    	     * Et on test si le nom du dossier est
+    	     * correct
+    	     */
+            for(int i = 1; i < dossier.length && estCorrect;i++) {
+            	if(dossier[i] != null && dossier[i] != "") {
+            		chemin += "/" + dossier[i];
+            		estCorrect = estCorrect(dossier[i]);
+            	}
+            }
+        }
+    	
+    	if(estCorrect) {
+    		this.chemin = chemin;
+    		System.out.print("Chemin : " + chemin + ", ");
+    	}
+        return estCorrect;
+    }
+    
+    /**
+     * Méthode permettant de tester si le <code>nom</code> du <code>fichier</code> est possible.<br>
+     * Un fichier comporte au moins 1 caractère. Il peut ou non être
+     * suivis d'une extention. (exemple : .txt). Cependant certains
+     * caractères sont interdits.
+     * @param fichier Contient le nom du fichier à analyser
+     * @return TRUE si le nom du fichier peut être utilisé
+     */
+    private boolean setNom(String fichier) {
+    	if (fichier == null) {
+    		return false;
+    	} else {
+    		if (estCorrect(fichier)) {
+                this.nom = fichier;
+                System.out.print("Fichier : " + fichier + ", ");
+    	    } else {
+    		    return false;
+    	    }
+    	}
+        return true;
+    }
+    
+    /**
+     *  Accesseur sur le <code>chemin</code>
+     *  @return le chemin menant au fichier
+     */
+    public String getChemin() {
+        return this.chemin;
+    }
+    
+    /**
+     *  Accesseur sur le <code>nom</code>
+     *  @return le nom du fichier
+     */
+    public String getNom() {
+        return this.nom;
+    }
+    
+    /**
+     * Ajout d'un <code>message</code> dans le fichier
+     * puis ajout d'une nouvelle ligne.<br>
+     * Cette méthode fait appel au flux de sortie.
+     * Tout caractère '\r' ou '\n' créé un retour à la ligne.
+     * @param message Contient le message à écrire dans le fichier
+     */
+    public void ecrire(String message) {
+    	/*
+    	 * TODO
+    	 * Tout caractère '\r' ou '\n' créé un retour à la ligne ?!
+    	 */
+    	if(message != null) {
+            try {
+	            this.ecriture.write(message);
+	            this.ecriture.newLine();
+	            this.ecriture.flush();
+	        } catch(IOException e) {
+	        }
+    	}
+    }
+    
+    /**
+     * Ajout d'un <code>message</code> dans le fichier à la ligne 
+     * <code>indice</code>.<br>
+     * Cette méthode fait appel au flux de sortie et à un flux d'entrée.
+     * Chaque ligne du fichier est mis en mémoire, puis on les
+     * écris une à une dans le nouveau fichier jusqu'à atteindre
+     * l'indice. Si l'indice n'est pas atteint et que toutes les lignes
+     * ont été réécrite. On place le message à la fin du fichier.
+     * Tout caractère '\r' ou '\n' créé un retour à la ligne.
+     * La première ligne a pour indice 0
+     * @param message Contient le message à écrire dans le fichier.
+     * @param indice  Contient l'indice de la ligne où écrire le message.
+     */
+    public void ecrire(String message, int indice) {
+    	
+        /*
+         * On garde en mémoire le contenu du fichier
+         * avant d'executer la suppression de la ligne
+         */
+        String[] contenuAvant = lectureDesLignes();
+        
+        try {
+        	/*
+             * On remet à zero le fichier avant de commencer
+             * l'écriture
+             */
+        	initWriter(false);
+        
+            /*
+             * On remet toutes les lignes en mémoire dans
+             * le fichier et lorsque l'index vaut l'indice
+             * de la ligne correspondant au message
+             * à écrire, on écrit le message.
+             */
+            for(int i = 0; i < contenuAvant.length; i++) {
+            	if(indice == i) {
+            		ecrire(message);
+            	}
+                ecrire(contenuAvant[i]);
+            }
+        } catch (IOException e) {
+        }
+    }
+    
+    /**
+     * Ajout d'un <code>message</code> dans le fichier à la ligne 
+     * <code>indice</code>.<br>
+     * Cette méthode fait appel au flux de sortie et à un flux d'entrée.
+     * Chaque ligne du fichier est mis en mémoire, puis on les
+     * écris une à une dans le nouveau <code>Fichier</code> jusqu'à atteindre
+     * l'<code>indice</code>. Si l'<code>indice</code> n'est pas atteint
+     * et que toutes les lignes ont été réécrite. On place le 
+     * <code>message</code> à la fin du fichier.
+     * Tout caractère '\r' ou '\n' créé un retour à la ligne.
+     * La première ligne a pour <code>indice</code> 0
+     * @param message Contient le <code>message</code> à écrire à l'indice <code>indice</code>.
+     * @param indice  Contient l'<code>indice</code> de la ligne à remplacer.
+     */
+    public void remplacerLigne(String message, int indice) {
+    	
+        /*
+         * On garde en mémoire le contenu du fichier
+         * avant d'executer la suppression de la ligne
+         */
+        String[] contenuAvant = lectureDesLignes();
+        
+        try {
+        	/*
+             * On remet à zero le fichier avant de commencer
+             * l'écriture
+             */
+        	initWriter(false);
+        
+            /*
+             * On remet toutes les lignes en mémoire dans
+             * le fichier sauf celle qui doit être
+             * remplacé
+             */
+            for(int i = 0; i < contenuAvant.length; i++) {
+            	if(indice == i) {
+            		ecrire(message);
+            	} else {
+            		ecrire(contenuAvant[i]);
+            	}
+            	
+            }
+        } catch (IOException e) {
+        }
+    }
+    
+    /**
+     * Retourne le contenu du fichier.
+     * Ce contenu est sous la forme d'un tableau de <code>String</code>.
+     * Chaque index du tableau contient une ligne du fichier.
+     * La première ligne du fichier est l'indice 0 du tableau.
+     * La fin du ligne se fait lors de la rencontre de '\n' ou '\r'
+     * On retourne un tableau vide (Taille : 0) si le fichier est vide.
+     * Exemple : <ul>
+     *               <li>tableauLigne[0] => "Première ligne du fichier"</li>
+     *               <li>tableauLigne[1] => "Seconde ligne du fichier"</li>
+     *           </ul>
+     * @return Le tableau contenant chaque ligne du fichier
+     */
+    public String[] lectureDesLignes() {
+    	
+    	/*
+    	 * C'est la taille du tableau
+    	 * Contenant à chaque index une ligne
+    	 * du fichier
+    	 */
+    	int nbLigne = nbLigne();
+    	
+    	/*
+    	 * Tableau contenant a chaque index
+    	 * une ligne du fichier
+    	 */
+    	String[] ligne;
+    	
+    	/*
+    	 * Contient le contenu de la ligne i
+    	 */
+    	String contenu;
+    	
+    	/*
+    	 * Index du tableau de ligne
+    	 */
+    	int i;
+    	
+    	/*
+    	 * On s'assure que le fichier comporte
+    	 * au moins une ligne.
+    	 */
+    	if (nbLigne > 0) {
+    		
+    		/*
+    		 * On initialise le tableau
+    		 */
+	    	ligne = new String[nbLigne];
+	    	
+	    	/*
+	    	 * On initialise l'index
+	    	 */
+	    	i = 0;
+	    	
+	    	try {
+	    		
+	    		/*
+	    		 * On réinitialise le flux d'entrée
+	    		 */
+	    		initReader();
+	    		
+	    		/*
+	    		 * On mets chaque ligne du fichier dans le tableau
+	    		 * tant que la ligne ne vaut pas null
+	    		 */
+	        	while ((contenu = this.lecture.readLine()) != null) {
+	        		ligne[i] = contenu;
+	    			i++;
+	    		}
+	    	} catch (IOException e) {
+	    		ligne = null;
+	    	}
+    	} else {
+    		ligne = new String[0];
+    	}
+    	return ligne;
+    }
+    
+    /**
+     * Retourne un objet de type <code>String</code>.
+     * Exemple : iut/java/nomdufichier.ext
+     * @return le chemin suivis du nom du fichier
      */
     public String toString() {
-        String aRetourner;
-        if (this.CHEMIN != "" && this.CHEMIN != "/") {
-            aRetourner = this.CHEMIN + "/" + this.NOM;
-        } else if (this.CHEMIN == "/"){
-            aRetourner = "/" + this.NOM;
-        } else {
-            aRetourner = this.NOM;
-        }
+    	String aRetourner;
+        if (this.chemin != "") {
+        	aRetourner = this.chemin + "/" + this.nom;
+	   	} else {
+	   		aRetourner = this.nom;
+	   	}
         return aRetourner;
     }
-
+    
+    
     /**
-     * TODO commenter
+     * Retourne le nombre de ligne que contient le fichier.<br>
+     * Une ligne se termine par "\n" ou "\r".<br>
+     * Cette methode fais appel au flux d'entrée.
+     * Si une erreur parvient, on renvoie -1.
+     * @return le nombre de ligne
      */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + CHEMIN.hashCode();
-        result = prime * result + NOM.hashCode();
-        return result;
+    public int nbLigne() {
+    	int nbLigne = 0;
+    	try {
+    		/*
+    		 * On réinitialise le flux d'entrée
+    		 */
+    		initReader();
+    		
+    		/*
+    		 * On incrémente nbLigne tant que
+    		 * readLine est différent de null
+    		 */
+        	while (this.lecture.readLine() != null) {
+    			nbLigne++;
+    		}
+    	} catch (IOException e) {
+    		nbLigne = -1;
+    	}
+        return nbLigne;
     }
-
-    /**
-     * Polymorphisme de la classe {@code Object}.
-     * Retourne vrai si l'{@code Object} en argument est le même {@code Object}
-     * que celui-ci.
-     * @param  unObject {@code Object} à comparer avec {@code Fichier}.
-     * @return {@code true} Si l'{@code Object} mis en argument représente
-     *         un {@code Fichier} équivalent à ce {@code Fichier}, retourne
-     *         {@code false} dans les autres cas.
-     */
-    @Override
-    public boolean equals(Object unObject) {
-        if (this == unObject) {
-            return true;
-        } else if (unObject == null || getClass() != unObject.getClass()) {
-            return false;
-        }
-
-        Fichier fich = (Fichier) unObject;
-        return this.CHEMIN.equals(fich.CHEMIN) && this.NOM.equals(fich.NOM);
-    }
-
-    /**
-     * Polymorphisme de la classe {@code Object}.
-     * Compare le {@code CHEMIN} suivis du {@code NOM} de deux fichiers 
-     * lexicographiquement.<br>
-     * Cette méthode fais appel a java.lang.String.compareTo(String).
-     * @param   fich      the {@code Fichier} to be compared.
-     * @return  La valeur {@code 0} si le fichier en argument est équivalent
-     *          à ce fichier; Une valeur inférieur à {@code 0} si le fichier
-     *          a un chemin suivis de son nom lexicographiquement plus petit que
-     *          le fichier en argument; Une valeur supérieur à {@code 0} si le 
-     *          fichier a un chemin suivis de son nom lexicographiquement plus 
-     *          grand que le fichier en argument.
-     */
-    public int compareTo(Fichier fich) {
-        return (this.CHEMIN + this.NOM).compareTo(fich.CHEMIN + fich.NOM);
-    }
-
 }

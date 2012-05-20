@@ -3,282 +3,256 @@
  * Package :	jagenda.util
  * Projet jAgenda - Info 1 2011-2012
  *
+ * $Revision$
+ * $Date$
+ * $HeadURL$
  */
+
 package jagenda.util;
-
-import jagenda.Horaire;
-import jagenda.RendezVous;
-
-import java.util.InputMismatchException;
+import java.io.Console;
 import java.util.Scanner;
+import jagenda.Horaire;
+import jagenda.Date;
 
 /**
- * Classe d'outils permettant la {@code Saisie} sur l'entrée standard de données.
- * Ces données peuvent être :
- * <ul>
- * </ul>
- * 
- * @author  Jason BOURLARD
- * @author  David PELISSIER
- * @version 0.3
+ * Outils permettant la <code>Saisie</code> sur l'entrée standart
+ * de données. Ces données peuvent être :
+ * <lu><li>int</li>
+ *     <li>double</li>
+ *     <li>float</li>
+ *     <li>String</li>
+ *     <li>Password (Sortie standart désactivé)</li>
+ *     <li>Date (jj/mm/aaaa)</li>
+ *     <li>Heure (hh:mm)</li> 
+ * </lu>
+ * @author Jason BOURLARD
+ * @author David PELISSIER
+ * @version 1.0.0
  */
 public class Saisie {
-
-    /** Séparateur d'affichage. */
-    public static final String SEPARATEUR =
-        "*********************************************************************";
-
+    
     /**
-     * Objet {@code Scanner} permettant les traitements d'entrées/sorties sur
-     * entrée / sortie standard.
+     * Permet la lecture d'une phrase. L'arrêt de la saisie
+     * s'éffectue lorsque l'utilisateur appuie sur ENTREE.<br>
+     * @return la ligne entrée sur l'entrée standart
      */
-    private Scanner clavier = new Scanner(System.in);
-
-
-    /**
-     * Permet la lecture d'une tâche du menu, entrée par l'utilisateur, 
-     * sur l'entrée standard.<br>
-     * Tant que la donnée lue sur l'entrée standard n'est pas une tâche
-     * correcte, on demande à l'utilisateur d'effectuer une nouvelle saisie.<br>
-     * Pour que la tâche soit jugée correcte, elle doit respecter les 
-     * conditions suivantes :
-     * <ul><li>Comrpise entre 0 et 6</li></ul>
-     * L'arrêt de la saisie s'effectue lorsque l'utilisateur appuie sur 
-     * {@code ENTREE}.<br>
-     * 
-     * @return Tâche saisie sur l'entrée standard.
-     */
-    public int menu() {
-        // Contiendra la tâche que veut effectuer l'utilisateur.
-        int tache = -1;
-
-        // Si cette valeur vaut {@code true}, alors l'utilisateur a commit une 
-        // erreur de saisie.
-        boolean erreur = false;
-
-        do {
-            System.out.println(Saisie.SEPARATEUR);
-            System.out.println("1 - Ajouter un nouveau rendez-vous ponctuel.");
-            System.out.println("2 - Ajouter un nouveau rendez-vous récurrent.");
-            System.out.println("3 - Modifier un rendez-vous.");
-            System.out.println("4 - Supprimer un rendez-vous.");
-            System.out.println("5 - Lister les rendez-vous.");
-            System.out.println("6 - Lister les créneaux disponibles.");            
-            System.out.println("7 - Configurer le logiciel.");
-            System.out.println("0 - Quitter.");
-            System.out.println(Saisie.SEPARATEUR);
-            System.out.print("Saisissez le numéro de la tâche à effectuer : ");
-            try {
-                tache = this.clavier.nextInt();
-                erreur = !(0 <= tache && tache <= 8);
-                if (erreur) {
-                    System.err.println(tache + " n'est pas une tâche valide.");
-                }
-                this.clavier.nextLine();
-            } catch (InputMismatchException inEx) {
-                System.err.println(this.clavier.nextLine() + 
-                                   " n'est pas une tâche valide.");
-            }
-
-        } while (erreur);
-        return tache;
+    public static String lirePhrase() {
+        Scanner clavier = new Scanner(System.in);
+        return clavier.nextLine();
     }
 
-
     /**
-     * Permet la lecture d'un libellé, entré par l'utilisateur, sur l'entrée
-     * standard.<br>
-     * Tant que la donnée lue sur l'entrée standard n'est pas un libellé 
-     * correct, on demande à l'utilisateur d'effectuer une nouvelle saisie.<br>
-     * Pour que le libellé soit jugé correct, il doit respecter les conditions
-     * suivantes :
-     * <ul><li>Doit être non nul</li>
-     *     <li>Longueur d'au plus 8 caractères</li>
-     *     <li>Ne doit pas contenir d'espaces</li></ul>
-     * L'arrêt de la saisie s'effectue lorsque l'utilisateur appuie sur 
-     * {@code ENTREE}.<br>
-     * 
-     * @return Libellé saisi sur l'entrée standard.
-     * @see    #estLibelleCorrect
+     * Permet la lecture d'un mot de passe.<br>
+     * L'arrêt de la saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @return le tableau de caractère entrée par l'utilisateur sur l'entrée standart.
      */
-    public String lireLibelle() {
-        // Contiendra le libellé que l'utilisateur a saisi.
-        String libelle;
-        
-        /*
-         *  Contiendra le numéro de l'erreur.
-         *      0 si aucune erreur n'est détecté
-         *      1 si le libellé est vide ou nul
-         *      2 si la taille du libellé est trop grande
-         *      3 si le libellé contient des espaces
-         */
-        int erreur = -1;
-        do {
-            
-            System.out.println("Veuillez saisir le libellé de votre RDV " +
-                               "(au plus 8 caractères) : ");
-            libelle = this.clavier.nextLine();
-            erreur = RendezVous.estLibelleCorrect(libelle);
-            switch(erreur) {
-            case 1:
-                System.err.println("Le libellé saisi est vide.");
-                break;
-            case 2:
-                System.err.println("Le libellé saisi est trop long.");
-                break;
-            case 3:
-                System.err.println("Le libellé saisi contient des espaces.");
-                break;
-            }
-        } while (erreur != 0);
-        return libelle;        
+    public static char[] lirePasse(){
+        char[] tableauCar=null;
+        Console cons = System.console();
+        if (cons != null && (tableauCar = cons.readPassword("%s :", "Password")) != null) {
+            return tableauCar;
+        }
+        return tableauCar;
     }
 
-
     /**
-     * Permet la lecture d'une description, entrée par l'utilisateur, sur 
-     * l'entrée standard.<br>
-     * Tant que la donnée lue sur l'entrée standard n'est pas une description
-     * correcte, on demande à l'utilisateur d'effectuer une nouvelle saisie.<br>
-     * Pour que la description soit jugée correcte, elle doit respecter les 
-     * conditions suivantes :
-     * <ul><li>Longueur d'au plus 5 lignes soit 400 caractères</li></ul>
-     * L'arrêt de la saisie s'effectue lorsque l'utilisateur appuie sur 
-     * {@code ENTREE}.<br>
-     * 
-     * @return Description saisie sur l'entrée standard.
-     * @see    #estDescriptionCorrecte
+     * Permet la lecture d'un flottant de type double
+     * lu sur l'entrée standart.
+     * Tant que la donnée lu sur l'entrée standart n'est
+     * pas un flottant, on demande à l'utilisateur
+     * de rentrer la donnée.<br>
+     * L'arrêt d'une saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @return le flottant entrée par l'utilisateur sur l'entrée standart
      */
-    public String lireDescription() {
-        // Contiendra la description que l'utilisateur a saisie.
-        String description;
+    public static double lireDouble(){
+        Scanner clavier = new Scanner(System.in);
+        double flottant=0;
+        boolean erreur=true;
         
-        // Si cette valeur vaut {@code true}, alors l'utilisateur a commit une 
-        // erreur de saisie.
-        boolean erreur = false;
         do {
-            System.out.println("Veuillez saisir la description de votre RDV " +
-                               "(au plus 5 lignes) : ");
-            description = this.clavier.nextLine();
-            erreur = !RendezVous.estDescriptionCorrecte(description);
-            if (erreur) {
-                System.err.println("Le description saisie est trop longue.");
-            }
+        	System.out.print("Veuillez entrer un flottant : ");
+        	if (clavier.hasNextDouble()) {
+        		erreur = false;
+        		flottant = clavier.nextDouble();
+        	} else {
+        		erreur = true;
+        		System.err.print("\"" + clavier.nextLine() + "\"");
+        		System.err.println(" n'est pas une entree valide.");
+        	}
         } while (erreur);
-        return description;        
-    }        
-
-
+        return flottant;
+    }
+    
     /**
-     * Permet la lecture d'une nature de rendez-vous, entrée par l'utilisateur, 
-     * sur l'entrée standard.<br>
-     * Tant que la donnée lue sur l'entrée standard n'est pas une nature
-     * correcte, on demande à l'utilisateur d'effectuer une nouvelle saisie.<br>
-     * Pour que la description soit jugée correcte, elle doit respecter les 
-     * conditions suivantes :
-     * <ul><li>Comprise entre 1 et 2 ("Personnel" ou "Professionnel")</li></ul>
-     * L'arrêt de la saisie s'effectue lorsque l'utilisateur appuie sur 
-     * {@code ENTREE}.<br>
-     * 
-     * @return Numéro de la nature saisi sur l'entrée standard.
-     * 
+     * Permet la lecture d'un flottant de type float
+     * lu sur l'entrée standart.
+     * Tant que la donnée lu sur l'entrée standart n'est
+     * pas un flottant, on demande à l'utilisateur
+     * de rentrer la donnée.<br>
+     * L'arrêt d'une saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @return le flottant entrée par l'utilisateur sur l'entrée standart
      */
-    public int lireNature() {
-        // Contiendra la nature que l'utilisateur a saisie.
-        int nature = -1;
+    public static float lireFloat() {
+        Scanner clavier = new Scanner(System.in);
+        float flottant=0;
+        boolean erreur=true;
         
-        // Si cette valeur vaut {@code true}, alors l'utilisateur a commit une 
-        // erreur de saisie.
-        boolean erreur = false;
         do {
-            System.out.println("Veuillez saisir le numéro de la nature de " +
-                               "votre RDV : ");
-            System.out.println("1 - Personnel");
-            System.out.println("2 - Professionnel");
-            try {
-                nature = this.clavier.nextInt();
-                erreur = !(1 <= nature && nature <= 2);
-                if (erreur) {
-                    System.err.println("La nature saisie n'existe pas.");
-                }
-            } catch (InputMismatchException inEx) {
-                erreur = true;
-                System.err.println("La nature saisie n'existe pas.");
-            } finally {
-                this.clavier.nextLine();    // On vide le tampon
-            }
+        	System.out.print("Veuillez entrer un flottant : ");
+        	if (clavier.hasNextFloat()) {
+        		erreur = false;
+        		flottant = clavier.nextFloat();
+        	} else {
+        		erreur = true;
+        		System.err.print("\"" + clavier.nextLine() + "\"");
+        		System.err.println("n'est pas une entree valide.");
+        	}
         } while (erreur);
-        return nature;        
-    } 
-
+        return flottant;
+    }
 
     /**
-     * Permet la lecture d'une date de rendez-vous, entrée par l'utilisateur, 
-     * sur l'entrée standard.<br>
-     * Tant que la donnée lue sur l'entrée standard n'est pas une date
-     * correcte, on demande à l'utilisateur d'effectuer une nouvelle saisie.<br>
-     * Pour que la date soit jugée correcte, elle doit respecter les 
-     * conditions suivantes :
-     * <ul><li>Respecte le format de configuration</li>
-     *     <li>Date valide du calendrier grégorien</li>
-     *     <li>Comprise dans l'intervalle d'années défini dans la 
-     *         configuration</li></ul>
-     * L'arrêt de la saisie s'effectue lorsque l'utilisateur appuie sur 
-     * {@code ENTREE}.<br>
-     * 
-     * @return Date saisie sur l'entrée standard.
+     * Permet la lecture d'un entier compris borné par un min
+     * et un max mis en argument.<br>
+     * Tant que la donnée lu sur l'entrée standart n'est
+     * pas un entier compris entre min et max,
+     * on demande à l'utilisateur de rentrer la donnée.<br>
+     * L'arrêt d'une saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @param  min Contient l'entier minimum autorisé.
+     * @param  max Contient l'entier maximum autorisé.
+     * @return l'entier entrée sur l'entrée standart
      */
-    public String lireDate() {
-        // Contiendra la date que l'utilisateur a saisie.
+    public static int lireInt(int min, int max){
+        Scanner clavier = new Scanner(System.in);
+        int entier=0;
+        boolean erreur=true;
+        
+        do {
+        	System.out.print("Veuillez entrer un entier compris entre " + min + " et " + max +" : ");
+        	if (clavier.hasNextInt()) {
+        		erreur = false;
+        		entier = clavier.nextInt();
+        		
+        		if ( max < entier || entier < min) {
+        			erreur = true;
+        			System.err.println(entier + " n'est pas compris entre " + min + " et " + max + ".");
+        		} 
+        	} else {
+        		erreur = true;
+        		System.err.print("\"" + clavier.nextLine() + "\"");
+        		System.err.println(" n'est pas une entree valide.");
+        	}
+        } while (erreur);
+        return entier;
+    }
+    
+    /**
+     * Permet la lecture d'un entier lu sur l'entrée
+     * standart.<br>
+     * Tant que la donnée lu sur l'entrée standart n'est
+     * pas un entier on demande à l'utilisateur de
+     * rentrer la donnée.<br>
+     * L'arrêt d'une saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @return l'entier entrée sur l'entrée standart
+     */
+    public static int lireInt(){
+        Scanner clavier = new Scanner(System.in);
+        int entier=0;
+        boolean erreur=true;
+        
+        do {
+        	System.out.print("Veuillez entrer un entier : ");
+        	if (clavier.hasNextInt()) {
+        		erreur = false;
+        		entier = clavier.nextInt();
+        	} else {
+        		erreur = true;
+        		System.err.print("\""+ clavier.nextLine() +"\"");
+        		System.err.println(" n'est pas une entree valide.");
+        	}
+        } while (erreur);
+        return entier;
+    }
+    
+    /**
+     * Permet la lecture d'une <code>Date</code> lu sur l'entrée
+     * standart.<br>
+     * Tant que la donnée lu sur l'entrée standart n'est
+     * pas une date, on demande à l'utilisateur de
+     * rentrer la donnée.<br>
+     * L'arrêt d'une saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @return l'entier entrée sur l'entrée standart
+     */
+    public static Date lireDate(){
+        Scanner clavier = new Scanner(System.in);
         String date;
+        Date aRetourner = null;
+        boolean erreur=true;
         
-        // Si cette valeur vaut {@code true}, alors l'utilisateur a commit une 
-        // erreur de saisie.
-        boolean erreur = false;
         do {
-            System.out.println("Veuillez saisir la date de votre RDV : ");
-            date = this.clavier.nextLine();
-            erreur = !(Horaire.estDateValide(date));
-            System.out.println(erreur);
-            if (erreur) {
-                System.err.println("Le date saisie est invalide.");
-            }
+        	System.out.print("Veuillez entrer une date au format jj/mm/aaaa : ");
+        	date = clavier.nextLine();
+        	if (Date.estUneDate(date)) {
+        		erreur = false;
+        		try {
+        		    aRetourner = new Date(date);
+        		} catch (Exception e) {
+        			erreur = true;
+        			System.err.print(e);
+        			System.err.print(" : \""+ date +"\"");
+            		System.err.println(" n'est pas une entree valide.");
+        		}
+        		erreur = false;
+        	} else {
+        		System.err.print("\""+ date +"\"");
+        		System.err.println(" n'est pas une entree valide.");
+        	}
         } while (erreur);
-        return date;            
-    } 
-
-
+        return aRetourner;
+    }
+    
     /**
-     * Permet la lecture d'une heure du rendez-vous, entrée par l'utilisateur, 
-     * sur l'entrée standard.<br>
-     * Tant que la donnée lue sur l'entrée standard n'est pas une heure
-     * correcte, on demande à l'utilisateur d'effectuer une nouvelle saisie.<br>
-     * Pour que l'heure soit jugée correcte, elle doit respecter les 
-     * conditions suivantes :
-     * <ul><li>Heure valide</li></ul>
-     * L'arrêt de la saisie s'effectue lorsque l'utilisateur appuie sur 
-     * {@code ENTREE}.<br>
-     * @param moment Défini si l'heure saisie est l'heure de début ou l'heure de
-     *               fin du rendez-vous.
-     * @return Heure saisie sur l'entrée standard.
-     * 
+     * Permet la lecture d'une <code>Horaire</code> lu sur l'entrée
+     * standart.<br>
+     * Une heure a pour format hh:mm (h -> heure, m -> minute)
+     * Tant que la donnée lu sur l'entrée standart n'est
+     * pas un <code>Horaire</code>, on demande à l'utilisateur de
+     * rentrer la donnée.<br>
+     * L'arrêt de la saisie s'éffectue lorsque l'utilisateur
+     * appuie sur ENTREE.<br>
+     * @return l'entier entrée sur l'entrée standart
      */
-    public String lireHeure(String moment) {
-        // Contiendra l'heure que l'utilisateur a saisie.
-        String heure;    
+    public static Horaire lireHeure(){
+        Scanner clavier = new Scanner(System.in);
+        String heure;
+        Horaire aRetourner = null;
+        boolean erreur=true;
         
-        // Si cette valeur vaut {@code true}, alors l'utilisateur a commit une 
-        // erreur de saisie.
-        boolean erreur = false;
         do {
-            System.out.println("Veuillez saisir l'heure de "+ moment +" de " +
-                               "votre RDV (ex : 14h25) : ");
-            heure = this.clavier.nextLine();
-            erreur = !(Horaire.estHeureValide(heure));
-            if (erreur) {
-                System.err.println("L'heure de début saisie est invalide.");
-            }
+        	System.out.print("Veuillez entrer une heure au format hh:mm : ");
+        	heure = clavier.nextLine();
+        	
+        	if (Horaire.estUneHeure(heure)) {
+        		erreur = false;
+        		try {
+        		    aRetourner = new Horaire(heure);
+        		} catch (Exception e) {
+        			erreur = true;
+        			System.err.print(e);
+        			System.err.print(" : \""+ heure +"\"");
+        			System.err.println(" n'est pas une entree valide.");
+        		}
+        	} else {
+        		System.err.print("\""+ heure +"\"");
+        		System.err.println(" n'est pas une entree valide.");
+        	}
         } while (erreur);
-        return heure;            
-    } 
+        return aRetourner;
+    }
 }
